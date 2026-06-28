@@ -1,5 +1,5 @@
-import AjedrezIA from "./AjedrezIA.jsx";
+import Chessmachine from "./Chessmachine.jsx";
 
 export default function App() {
-    return <AjedrezIA />
+    return <Chessmachine />
 }
