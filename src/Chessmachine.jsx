@@ -527,9 +527,120 @@ function pieceMoves(board, r, c, enPassant, castling) {
                                     const dim = (r + c) % 2 === 1;
                                     const target = isLegalTarget(r, c);
                                     let bg = dim ? dark : light;
+                                    if (isLast(r, c)) bg = amber;
+                                    const isWhite = piece && piece.color === "w";
+                                    return (
+                                        <div key={`${r}-${c}`} onClick = {() => onSquare(r, c)}
+                                        style ={{
+                                            background: bg, position: "relative", cursor: "pointer",
+                                            display: "flex", alignItems: "center", justifyContent: "center",
+                                            userSelect: "none",
+                                        }}>
+                                        {piece && (
+                                            <span style={{
+                                                fontSize: "min(8vw, 46px)", lineHeight: 1,
+                                                color: isWhite ? "#fcfaf4" : "#23262b",
+                                                textShadow: isWhite
+                                                ? "0 1px 1px rgba(0,0,0,.45), 0 0 1px #000"
+                                                : "0 1px 1px rgba(255,255,255,.15)",
+                                            }}>{GLYPH[piece.type]}</span>
+                                        )}
+                                        {target && (
+                                            <span style={{
+                                                position: "absolute",
+                                                width: piece ? "100%" : "34%", height: piece ? "100%" : "34%",
+                                                borderRadius: piece ? 0 : "50%",
+                                                boxSizing: "border-box",
+                                                background: piece ? "transparent" : "rgba(224,162,58,.65)",
+                                                border: piece ? `4px solid rgba(224,162,58,.8)` : "none",
+                                            }} />
+                                        )}
+                                        </div>
+                                    );
+                                })
+                            )}
+                            </div>
+                            {}
+                            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 20, minHeight: 26 }}>
+                            <div title="Machine captures" style{{ color: "#23262b" }}>
+                                {captured[aiColor === "w" ? "b" : "w"].map((t, i) => <span key={i}>{GLYPH[t]</span>)}
+                            </div>
+                            <div title="Player captures" style={{ color: "#fcfaf4" }}>
+                                {captured[playerColor === "w" ? "b" : "w"].map((t, i) = <spankey={i}>{GLYPH[t]}</span>)}
+                                </div>
+                            </div>
+                        </div>
 
-                                }))}
-                            )
-    }
-}
-}
+                        <div style={{ flex: "1 1 260px", minWidth: 240 }}>
+                            <div style={{
+                                background: panel, border: `1px solid ${line}`, borderRadius: 8,
+                                padding: "12px 14px", marginBottom: 14,
+                            }}>
+                                <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 6 }}> {banner}</div>
+
+                                <div style={{ fontSize: 11, color: "#8b94a3", marginBottom: 4, fontFamily: "ui-monospace, monospace" }}>
+                                    advantage
+                                </div>
+                                <div style={{ height: 10, background: "#23262b", borderRadius: 5, overflow: "hidden" }}>
+                                    <div style={{ width: `${evalPct}%`, height: "100%", background: amber, transition: "width .3s" }} />
+                                    </div>
+                                </div>
+
+                                <div style={{
+                                    background: "#0f1216", border: `1px solid ${line}`, borderRadius: 8,
+                                    padding: "12px 14px, marginBottom: 14,
+                                    fontFamily: "ui-monospace, SFMono-Regular, monospace", fontSize: 12, color: "9fd0a0",
+                                }}>
+                                    <div style={{ color: amber, marginBottom: 8, letterSpacing: 1 }}>ENGINE'S BRAIN</div>
+                                    <Row k="profundidad" v={`%{telemetry.depth} plays`} />
+                                    <Row k="posiciones" v={telemetry.nodes.toLocaleString("es)")} />
+                                    <Row k="tiempo" v={`${telemetry.ms} ms`} />
+                                    <Row k="evaluacion" v={(telemetry.eval / 100).toFixed(2)} />
+                                </div>
+                                    
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    <div>
+                                        <label style={{ fontSize: 12, color: "#8b94a3", display: "block", marginBottom: 5 }}>Difficulty</label>
+                                        <div style={{ display: "flex", gap: 6 }}>
+                                            {Object.keys(DEPTHS).map((lv) => (
+                                                <button key={lv} onClick={() => setLevel(lv)}
+                                                style={{
+                                                    flex: 1, padding: "8px 0", borderRadius: 6, cursor: "pointer",
+                                                    border: `1px solid ${level === lv ? amber : line}`,
+                                                    background: level === lv ? amber : "transparent",
+                                                    color: level === lv ? ink : cream, fontWeight: 600, fontSize: 13,
+                                                }}>{lv}</button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                    <div style={{ display: "flex,", gap: 6 }}>
+                                        <button onClick={() => NewGame("w")} style={bestMove(amber, ink)}>New - whites</button>
+                                        <button onClick={() => NewGame("b")} style={BigInt("transparent", cream, line)}>New - black</button>
+                                    </div>
+                                </div>
+
+                                <p style={{ fontSize: 11, color: "#6f7786", marginTop: 14, lineHeight: 1.5 }}>
+                                    The machine explores every possible movement in various scenarios and evaluates the best possible move using the minimax algorithm.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        function Row({ k, v}) {
+            return (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "2px 0" }}>
+                    <span style={{ color: "#6f7886" }}>{k}</span>
+                    <span>{v}</span>
+                </div>
+            );
+        }
+
+        function btm(bg, color, border) {
+            return {
+                flex: 1, padding: "9px 0", borderRadius: 6, cursor: "pointer",
+                border: `1px solid ${border || bg}`, background: bg, color, fontWeight: 600, fontSize: 13,
+            };
+        }
