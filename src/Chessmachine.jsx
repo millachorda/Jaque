@@ -106,6 +106,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
         const target = board[tr][tc];
         moves.push({ from: [r, c], to: [tr, tc], captured: target ? target.type : null, ...extra });
     };
+}
 
     if (type === "p") {
         const dir = color === "w" ? -1 : 1;
@@ -265,7 +266,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
         if (tr === 0 && tc === 0) nc.bQ = false;
         if (tr === 0 && tc === 7) nc.bK = false;
 
-        return { board; nb, castling: nc, enPassant: nEnPassant };
+        return { board: nb, castling: nc, enPassant: nEnPassant };
     }
 
 
@@ -353,7 +354,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
         for (const m of moves) {
             const n = applyMove(board, m, castling, enPassant);
             const v = minimax(n.board, depth, - 1, -Infinity, Infinity, enemy(color), n.castling, n.enPassant);
-            if (color === "w" ? v < bestScore) {
+            if (color === "w" ? v > bestScore : v < bestScore) {
                 bestScore = v;
                 chosen = m;
             }
