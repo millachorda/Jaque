@@ -40,6 +40,7 @@ const PST = {
         [-30, 5, 15, 20, 20, 15, 5, -30],
         [-30, 0, 15, 20, 20, 15, 0, -30],
         [-30, 5, 10, 15, 15, 10, 5, -30],
+        [-40, -20, 0, 5, 5, 0, -20, -40],
         [-50, -40, -30, -30, -30, -30, -40, -50],
     ],
     b: [
@@ -48,6 +49,7 @@ const PST = {
         [-10, 0, 5, 10, 10, 5, 0, -10],
         [-10, 5, 5, 10, 10, 5, 5, -10],
         [-10, 0, 10, 10, 10, 10, 0, -10],
+        [-10, 10, 10, 10, 10, 10, 10, -10],
         [-10, 5, 0, 0, 0, 0, 5, -10],
         [-20, -10, -10, -10, -10, -10, -10, -20],
     ],
@@ -84,8 +86,8 @@ const PST = {
     ],
 };
 
-const inBounds = (r, c) => r >= r >= 0 && r < 8 && c >= 0 && c < 8;
-const coloneBoard = (b) => b.map((row) => row.map((p) => (p ? { ...p } : null)));
+const inBounds = (r, c) => r >= 0 && r < 8 && c >= 0 && c < 8;
+const cloneBoard = (b) => b.map((row) => row.map((p) => (p ? { ...p } : null)));
 const enemy = (color) => (color === "w" ? "b" : "w");
 
 
@@ -93,7 +95,7 @@ const DIRS = {
     r: [[-1, 0], [1, 0], [0, -1], [0, 1]],
     b: [[-1, -1], [-1, 1], [1, -1], [1, 1]],
     q: [[-1, 0], [1, 0], [0, -1], [0, 1], [-1, -1], [-1, 1], [1, -1], [1, 1]],
-    n: [[-2, -1], [-1, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]],
+    n: [[-2, -1], [-2, 1], [-1, -2], [-1, 2], [1, -2], [1, 2], [2, -1], [2, 1]],
     k: [[-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]],
 };
 
@@ -106,7 +108,6 @@ function pieceMoves(board, r, c, enPassant, castling) {
         const target = board[tr][tc];
         moves.push({ from: [r, c], to: [tr, tc], captured: target ? target.type : null, ...extra });
     };
-}
 
     if (type === "p") {
         const dir = color === "w" ? -1 : 1;
@@ -133,13 +134,13 @@ function pieceMoves(board, r, c, enPassant, castling) {
         return moves;
     }
 
-    if (type === "n" || type === "k") {
-        for (const [dr, dc] of DIRS[type]) {
-            const tr = r + dr, tc = c + dc;
-            if (!inBounds(tr, tc)) continue;
-            const t = board[tr][tc];
-            if (!t || t.color !== color) add(tr, tc);
-        }
+  if (type === "n" || type === "k") {
+    for (const [dr, dc] of DIRS[type]) {
+      const tr = r + dr, tc = c + dc;
+      if (!inBounds(tr, tc)) continue;
+      const t = board[tr][tc];
+      if (!t || t.color !== color) add(tr, tc);
+    }
         if (type === "k" && castling) {
             const row = color === "w" ? 7 : 0;
             const opp = enemy(color);
@@ -167,10 +168,11 @@ function pieceMoves(board, r, c, enPassant, castling) {
                 if (t.color !== color) add(tr, tc);
                 break;
             }
+            tr += dr; tc += dc;
         }
-        return moves;
     }
-
+    return moves;
+}
 
     function isAttacked(board, r, c, byColor) {
         const pd = byColor === "w" ? 1 : -1;
@@ -198,7 +200,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
                     if (p.color === byColor && (p.type === "r" || p.type === "q")) return true;
                     break;
                 }
-                tr += dr; rc += dc;
+                tr += dr; tc += dc;
             }
         }
 
@@ -290,8 +292,8 @@ function pieceMoves(board, r, c, enPassant, castling) {
             for (let c = 0; c < 8; c++) {
                 const p = board[r][c];
                 if (!p) continue;
-                if (p.color === "w") score += VALUE[p.type] + PST[p.type][r][c];
-                else score -= VALUE[p.type] + PST[p.type][7 - r][c];
+                if (p.color === "w") score += Value[p.type] + PST[p.type][r][c];
+                else score -= Value[p.type] + PST[p.type][7 - r][c];
             }
         return score;
     }
@@ -300,8 +302,8 @@ function pieceMoves(board, r, c, enPassant, castling) {
 
     function orderMoves(moves) {
         return moves.slice().sort((a, b) => {
-            const sa = a.captured ? VALUE[a.captured] : 0;
-            const sb = b.captured ? VALUE[b.captured] : 0;
+            const sa = a.captured ? Value[a.captured] : 0;
+            const sb = b.captured ? Value[b.captured] : 0;
             return sb - sa;
         });
     }
@@ -334,7 +336,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
             let best = Infinity;
             for (const m of ordered) {
                 const n = applyMove(board, m, castling, enPassant);
-                const v = miniMax(n.board, depth - 1, alpha, beta, "w", n.castling, n.enPassant);
+                const v = minimax(n.board, depth - 1, alpha, beta, "w", n.castling, n.enPassant);
                 if (v < best) best = v;
                 if (v < beta) beta = v;
                 if (beta <= alpha) break;
@@ -375,7 +377,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
         const [enPassant, setEnPassant] = useState(null);
         const [selected, setSelected] = useState(null);
         const [legal, setLegal] = useState([]);
-        const [LastMove, setLastMove] = useState(null);
+        const [lastMove, setlastMove] = useState(null);
         const [captured, setCaptured] = useState({ w: [], b: [] });
         const [status, setStatus] = useState("playing")
         const [thinking, setThinking] = useState(false);
@@ -406,13 +408,13 @@ function pieceMoves(board, r, c, enPassant, castling) {
             setCastling(next.castling);
             setEnPassant(next.enPassant);
             setTurn(nextTurn);
-            setLastMove({ from: move.from, to: move.to });
+            setlastMove({ from: move.from, to: move.to });
             setCaptured(newCap);
             setStatus(st);
             setSelected(null);
             setLegal([]);
             return { ...next, turn: nextTurn, captured: newCap, status: st };
-            ), [checkEnd]);
+            }, [checkEnd]);
 
         useEffect(() => {
             if (turn !== aiColor) return;
@@ -421,7 +423,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
             const t = setTimeout(() => {
                 const depth = DEPTHS[level];
                 const start = performance.now();
-                const { move, score, nodes } = bestMove(boardRed.current, depth, aiColor, castling, enPassant);
+                const { move, score, nodes } = bestMove(boardRef.current, depth, aiColor, castling, enPassant);
                 const ms = Math.round(performance.now() - start);
                 setTelemetry({ eval: score, depth, nodes, ms });
                 if (move) doMove(move, boardRef.current, castling, enPassant, captured);
@@ -465,7 +467,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
             setEnPassant(null);
             setSelected(null);
             setLegal([]);
-            setLastMove(null);
+            setlastMove(null);
             setCaptured({ w: [], b: [] });
             setStatus("playing");
             setThinking(false);
@@ -487,7 +489,7 @@ function pieceMoves(board, r, c, enPassant, castling) {
         const evalPct = Math.max(2, Math.min(98, 50 + evalForPlayer / 40));
 
         let banner = "";
-        if (status === "checkmate") banner = turn === playerColor = "Checkmate - You lost" : "Checkmate - You won";
+        if (status === "checkmate") banner = turn === playerColor ? "Checkmate - You lost" : "Checkmate - You won";
         else if (status === "stalemate") banner = "stuck - draw";
         else if (status === "check") banner = turn === playerColor ? "You're in check!" : "Check to machine";
         else if (thinking) banner = "Machine is thinking...";
@@ -563,11 +565,11 @@ function pieceMoves(board, r, c, enPassant, castling) {
                             </div>
                             {}
                             <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 20, minHeight: 26 }}>
-                            <div title="Machine captures" style{{ color: "#23262b" }}>
-                                {captured[aiColor === "w" ? "b" : "w"].map((t, i) => <span key={i}>{GLYPH[t]</span>)}
+                            <div title="Machine captures" style={{ color: "#23262b" }}>
+                                {captured[aiColor === "w" ? "b" : "w"].map((t, i) => <span key={i}>{GLYPH[t]}</span>)}
                             </div>
                             <div title="Player captures" style={{ color: "#fcfaf4" }}>
-                                {captured[playerColor === "w" ? "b" : "w"].map((t, i) = <spankey={i}>{GLYPH[t]}</span>)}
+                                {captured[playerColor === "w" ? "b" : "w"].map((t, i) => <span key={i}>{GLYPH[t]}</span>)}
                                 </div>
                             </div>
                         </div>
@@ -589,12 +591,12 @@ function pieceMoves(board, r, c, enPassant, castling) {
 
                                 <div style={{
                                     background: "#0f1216", border: `1px solid ${line}`, borderRadius: 8,
-                                    padding: "12px 14px, marginBottom: 14,
+                                    padding: "12px 14px", marginBottom: 14,
                                     fontFamily: "ui-monospace, SFMono-Regular, monospace", fontSize: 12, color: "9fd0a0",
                                 }}>
                                     <div style={{ color: amber, marginBottom: 8, letterSpacing: 1 }}>ENGINE'S BRAIN</div>
                                     <Row k="profundidad" v={`%{telemetry.depth} plays`} />
-                                    <Row k="posiciones" v={telemetry.nodes.toLocaleString("es)")} />
+                                    <Row k="posiciones" v={telemetry.nodes.toLocaleString("es")} />
                                     <Row k="tiempo" v={`${telemetry.ms} ms`} />
                                     <Row k="evaluacion" v={(telemetry.eval / 100).toFixed(2)} />
                                 </div>
@@ -615,8 +617,8 @@ function pieceMoves(board, r, c, enPassant, castling) {
                                         </div>
                                     </div>
                                     <div style={{ display: "flex,", gap: 6 }}>
-                                        <button onClick={() => NewGame("w")} style={bestMove(amber, ink)}>New - whites</button>
-                                        <button onClick={() => NewGame("b")} style={BigInt("transparent", cream, line)}>New - black</button>
+                                        <button onClick={() => NewGame("w")} style={btm(amber, ink)}>New - whites</button>
+                                        <button onClick={() => NewGame("b")} style={btm("transparent", cream, line)}>New - black</button>
                                     </div>
                                 </div>
 
@@ -626,7 +628,6 @@ function pieceMoves(board, r, c, enPassant, castling) {
                             </div>
                         </div>
                     </div>
-                </div>
             );
         }
 
@@ -645,3 +646,4 @@ function pieceMoves(board, r, c, enPassant, castling) {
                 border: `1px solid ${border || bg}`, background: bg, color, fontWeight: 600, fontSize: 13,
             };
         }
+
