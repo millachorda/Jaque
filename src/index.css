@@ -1,7 +1,7 @@
 * {
     box-sizing: border-box;
 }
-
+ 
 html,
 body,
 #root {
@@ -9,8 +9,64 @@ body,
     padding: 0;
     min-height: 100vh;
 }
-
+ 
 body {
     background: #14171c;
     font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+    /* Evita el resaltado azul y el ajuste raro de fuente al tocar en movil */
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+}
+ 
+/* Contenedor principal: el padding se reduce en pantallas pequenas.
+   Se controla aqui (y no inline) porque los estilos inline de React
+   no admiten media queries. */
+.jq-app {
+    padding: 24px 16px;
+}
+ 
+@media (max-width: 560px) {
+    .jq-app {
+        padding: 14px 10px;
+    }
+}
+ 
+/* Botones: hover y feedback al pulsar (tampoco posibles con estilos inline) */
+.jq-btn {
+    transition: filter .15s ease, transform .05s ease;
+    -webkit-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
+}
+ 
+.jq-btn:hover {
+    filter: brightness(1.12);
+}
+ 
+.jq-btn:active {
+    transform: translateY(1px);
+}
+ 
+/* Resaltado de casilla solo en dispositivos con puntero real (no en tactil,
+   donde el "hover" se quedaria pegado tras tocar) */
+@media (hover: hover) and (pointer: fine) {
+    .jq-square:hover {
+        filter: brightness(1.08);
+    }
+}
+ 
+/* Punto que late mientras la maquina piensa */
+.jq-pulse {
+    animation: jq-pulse 1s ease-in-out infinite;
+}
+ 
+@keyframes jq-pulse {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: .35;
+        transform: scale(.7);
+    }
 }
