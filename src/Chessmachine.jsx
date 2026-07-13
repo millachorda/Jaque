@@ -881,3 +881,6 @@ function pieceMoves(board, r, c, enPassant, castling) {
             border: `1px solid ${border || bg}`, background: bg, color, fontWeight: 600, fontSize: 13,
         };
     }
+
+
+    
