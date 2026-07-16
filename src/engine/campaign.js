@@ -20,9 +20,9 @@ export function chapterOf(level) {
 }
 
 export function skillForLevel(level) {
-    const t = (level - 1) / (TOTAL_LEVELS - 1);      // 0..1
-    const curved = Math.pow(t, 1.15);                 // arranca fácil, sube al final
-    return Math.round(curved * 20);                   // 0..20
+    const t = (level - 1) / (TOTAL_LEVELS - 1);
+    const curved = Math.pow(t, 1.15);
+    return Math.round(curved * 20);
 }
 
 function P(type, color) { return { type, color }; }

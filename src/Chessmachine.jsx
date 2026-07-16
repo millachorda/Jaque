@@ -370,10 +370,8 @@ function pieceMoves(board, r, c, enPassant, castling) {
 
     const DEPTHS = { Easy: 2, Medium: 3, Difficult: 4 };
 
-    // Tiempo (ms) que la maquina "piensa" antes de mover. Fijo en 3 segundos.
     const THINK_MS = { Easy: 3000, Medium: 3000, Difficult: 3000 };
 
-    // ---- Fichas dibujadas en SVG (viewBox 0 0 45 45) ----
     function PieceShape({ type, fill, stroke }) {
         const common = { fill, stroke, strokeWidth: 1.5, strokeLinejoin: "round" };
         switch (type) {
@@ -482,8 +480,8 @@ function pieceMoves(board, r, c, enPassant, castling) {
         const [playerColor, setPlayerColor] = useState("w");
         const [level, setLevel] = useState("Medium");
         const [telemetry, setTelemetry] = useState({ eval: 0, depth: 0, nodes: 0, ms: 0 });
-        const [anim, setAnim] = useState(null);          // animacion de la ficha que se mueve
-        const [isFs, setIsFs] = useState(false);         // estado pantalla completa
+        const [anim, setAnim] = useState(null);
+        const [isFs, setIsFs] = useState(false);
         const boardRef = useRef(board);
         const rootRef = useRef(null);
         const animId = useRef(0);
@@ -524,7 +522,6 @@ function pieceMoves(board, r, c, enPassant, castling) {
             return { ...next, turn: nextTurn, captured: newCap, status: st };
         }, [checkEnd]);
 
-        // Dispara la transicion: pinta primero en la casilla de origen y luego desliza a destino.
         useEffect(() => {
             if (!anim || anim.settled) return;
             let id2;
@@ -536,7 +533,6 @@ function pieceMoves(board, r, c, enPassant, castling) {
             return () => { cancelAnimationFrame(id1); if (id2) cancelAnimationFrame(id2); };
         }, [anim ? anim.key : null]);
 
-        // Sincroniza el estado de pantalla completa
         useEffect(() => {
             const h = () => setIsFs(!!document.fullscreenElement);
             document.addEventListener("fullscreenchange", h);
@@ -563,8 +559,6 @@ function pieceMoves(board, r, c, enPassant, castling) {
                 const { move, score, nodes } = bestMove(boardRef.current, depth, aiColor, castling, enPassant);
                 const ms = Math.round(performance.now() - start);
                 setTelemetry({ eval: score, depth, nodes, ms });
-                // El calculo es casi instantaneo; forzamos un tiempo minimo de "reflexion"
-                // para que la maquina se tome su tiempo antes de mover.
                 const wait = Math.max(0, THINK_MS[level] - ms);
                 moveTimer = setTimeout(() => {
                     if (move) doMove(move, boardRef.current, castling, enPassant, captured);
@@ -645,15 +639,12 @@ function pieceMoves(board, r, c, enPassant, castling) {
         const machKey = aiColor === "w" ? "b" : "w";
         const playKey = playerColor === "w" ? "b" : "w";
 
-        // Casilla del rey en jaque (para resaltarla en rojo)
         const checkSq = status === "check" ? findKing(board, turn) : null;
         const isCheckSq = (r, c) => checkSq && checkSq[0] === r && checkSq[1] === c;
 
-        // Ventaja material (en peones) desde el punto de vista del jugador
         const material = (arr) => arr.reduce((s, t) => s + Value[t], 0);
         const playerAdv = (material(captured[playKey]) - material(captured[machKey])) / 100;
 
-        // Etiquetas de coordenadas en los bordes visibles del tablero
         const firstCol = cols[0];
         const lastRow = rows[rows.length - 1];
 
