@@ -24,10 +24,13 @@ export default function PlayScreen({
   engineSkill,
   levelInfo,
   onExit,
-  onFinish
+  onFinish,
+  resume,
+  onSnapshot
 }) {
-  const [playerColor, setPlayerColor] = useState(pc || "w");
-  const [diff, setDiff] = useState("3");
+  const R = resume || null;
+  const [playerColor, setPlayerColor] = useState(R ? R.playerColor : pc || "w");
+  const [diff, setDiff] = useState(R ? R.diff : "3");
   const skill = mode === "machine" ? DIFF[diff] : engineSkill;
   const aiColor = enemy(playerColor);
   const startBoard = () => initial && initial.board ? initial.board.map(r => r.map(p => p ? {
@@ -41,18 +44,18 @@ export default function PlayScreen({
     bK: true,
     bQ: true
   };
-  const [board, setBoard] = useState(startBoard);
-  const [turn, setTurn] = useState(initial && initial.turn ? initial.turn : "w");
-  const [castling, setCastling] = useState(startCastling);
-  const [enPassant, setEnPassant] = useState(initial && initial.enPassant ? initial.enPassant : null);
+  const [board, setBoard] = useState(() => R ? R.board : startBoard());
+  const [turn, setTurn] = useState(R ? R.turn : initial && initial.turn ? initial.turn : "w");
+  const [castling, setCastling] = useState(() => R ? R.castling : startCastling());
+  const [enPassant, setEnPassant] = useState(R ? R.enPassant : initial && initial.enPassant ? initial.enPassant : null);
   const [selected, setSelected] = useState(null);
   const [legal, setLegal] = useState([]);
-  const [lastMove, setLastMove] = useState(null);
-  const [captured, setCaptured] = useState({
+  const [lastMove, setLastMove] = useState(R ? R.lastMove : null);
+  const [captured, setCaptured] = useState(() => R ? R.captured : {
     w: [],
     b: []
   });
-  const [status, setStatus] = useState("playing");
+  const [status, setStatus] = useState(R ? R.status : "playing");
   const [thinking, setThinking] = useState(false);
   const [telemetry, setTelemetry] = useState({
     eval: 0,
@@ -62,10 +65,10 @@ export default function PlayScreen({
   });
   const [anim, setAnim] = useState(null);
   const [finished, setFinished] = useState(null);
-  const [playerMoves, setPlayerMoves] = useState(0);
+  const [playerMoves, setPlayerMoves] = useState(R ? R.playerMoves : 0);
   const [coach, setCoach] = useState(null);
   const [pending, setPending] = useState(null);
-  const [history, setHistory] = useState([]);
+  const [history, setHistory] = useState(() => R ? R.history : []);
   const boardRef = useRef(board);
   const stateRef = useRef({
     castling,
@@ -191,6 +194,26 @@ export default function PlayScreen({
     setThinking(false);
     if (onFinish) onFinish(result);
   }
+  useEffect(() => {
+    if (!onSnapshot) return;
+    if (finished || status === "checkmate" || status === "stalemate") {
+      onSnapshot(null);
+      return;
+    }
+    onSnapshot({
+      board,
+      turn,
+      castling,
+      enPassant,
+      lastMove,
+      captured,
+      status,
+      playerMoves,
+      history,
+      diff,
+      playerColor
+    });
+  }, [board, turn, castling, enPassant, lastMove, captured, status, playerMoves, history, diff, playerColor, finished, onSnapshot]);
   useEffect(() => {
     if (!pending) return;
     const id = setTimeout(() => {

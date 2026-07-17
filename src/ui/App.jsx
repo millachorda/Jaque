@@ -9,14 +9,19 @@ import RulesScreen from "./RulesScreen.jsx";
 import { getLevel } from "../engine/campaign.js";
 import { loadLocal, saveLocal, mergeProgress, recordResult } from "../state/store.js";
 import { loadCloudProgress, saveCloudProgress } from "../state/cloud.js";
+import { loadSession, saveSession, hayPartidaGuardada, etiquetaPartida } from "../state/session.js";
 import { IDIOMAS, idiomaInicial, guardarIdioma, useTraduccionAutomatica } from "../i18n/autotranslate.js";
 export default function App() {
   const {
     user
   } = useAuth();
-  const [screen, setScreen] = useState("menu");
+  const sesion0 = useRef(null);
+  if (sesion0.current === null) sesion0.current = loadSession();
+  const [screen, setScreen] = useState(() => sesion0.current.screen || "menu");
   const [progress, setProgress] = useState(loadLocal);
-  const [playCfg, setPlayCfg] = useState(null);
+  const [playCfg, setPlayCfg] = useState(() => sesion0.current.playCfg || null);
+  const resumeRef = useRef(sesion0.current.game || null);
+  const [gameKey, setGameKey] = useState(0);
   const [isFs, setIsFs] = useState(false);
   const rootRef = useRef(null);
   const [lang, setLang] = useState(idiomaInicial);
@@ -36,6 +41,25 @@ export default function App() {
     saveLocal(p);
     if (user) saveCloudProgress(user.uid, p);
   }, [user]);
+  useEffect(() => {
+    saveSession({
+      screen,
+      playCfg
+    });
+  }, [screen, playCfg]);
+  const onSnapshot = useCallback(g => {
+    saveSession({
+      game: g
+    });
+  }, []);
+  function continuarPartida() {
+    const s = loadSession();
+    if (!hayPartidaGuardada(s)) return;
+    resumeRef.current = s.game;
+    setPlayCfg(s.playCfg);
+    setGameKey(k => k + 1);
+    setScreen("play");
+  }
   useEffect(() => {
     const h = () => setIsFs(!!document.fullscreenElement);
     document.addEventListener("fullscreenchange", h);
@@ -59,6 +83,8 @@ export default function App() {
       level: lvl.level,
       kind: lvl.kind
     });
+    resumeRef.current = null;
+    setGameKey(k => k + 1);
     setScreen("play");
   }
   function onFinishLevel(result) {
@@ -75,6 +101,8 @@ export default function App() {
       engineSkill: 9,
       levelInfo: null
     });
+    resumeRef.current = null;
+    setGameKey(k => k + 1);
     setScreen("play");
   }
   function startTraining() {
@@ -88,6 +116,8 @@ export default function App() {
         goal: "Juega normal. Si hay una jugada mejor que la tuya, te lo explico y puedes deshacer."
       }
     });
+    resumeRef.current = null;
+    setGameKey(k => k + 1);
     setScreen("play");
   }
   return <div ref={rootRef} style={{
@@ -159,9 +189,9 @@ export default function App() {
         marginBottom: 18
       }} />
 
-                {screen === "menu" && <Menu onCampaign={() => setScreen("campaign")} onMachine={startMachine} onTraining={startTraining} onOnline={() => setScreen("online")} onRules={() => setScreen("rules")} onLogin={() => setScreen("login")} progress={progress} />}
+                {screen === "menu" && <Menu onContinue={continuarPartida} resumeLabel={etiquetaPartida(loadSession())} onCampaign={() => setScreen("campaign")} onMachine={startMachine} onTraining={startTraining} onOnline={() => setScreen("online")} onRules={() => setScreen("rules")} onLogin={() => setScreen("login")} progress={progress} />}
                 {screen === "campaign" && <CampaignScreen progress={progress} onPlay={startLevel} onExit={() => setScreen("menu")} />}
-                {screen === "play" && playCfg && <PlayScreen {...playCfg} onFinish={onFinishLevel} onExit={() => setScreen(playCfg.mode === "campaign" || playCfg.mode === "puzzle" ? "campaign" : "menu")} />}
+                {screen === "play" && playCfg && <PlayScreen key={gameKey} {...playCfg} resume={resumeRef.current} onSnapshot={onSnapshot} onFinish={onFinishLevel} onExit={() => setScreen(playCfg.mode === "campaign" || playCfg.mode === "puzzle" ? "campaign" : "menu")} />}
                 {screen === "online" && <OnlineScreen onExit={() => setScreen("menu")} />}
                 {screen === "rules" && <RulesScreen onExit={() => setScreen("menu")} />}
                 {screen === "login" && <LoginScreen onExit={() => setScreen("menu")} />}
@@ -169,6 +199,8 @@ export default function App() {
         </div>;
 }
 function Menu({
+  onContinue,
+  resumeLabel,
   onCampaign,
   onMachine,
   onTraining,
@@ -205,6 +237,7 @@ function Menu({
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
     gap: 12
   }}>
+            {resumeLabel && card("Continuar partida", `Tienes una partida sin terminar: ${resumeLabel}.`, onContinue, T.green)}
             {card("Campaña", `1000 niveles que suben de dificultad. Vas por el nivel ${progress.unlockedLevel || 1}.`, onCampaign, T.amber)}
             {card("Jugar vs máquina", "Partida libre con 5 niveles de dificultad, del principiante al maestro.", onMachine)}
             {card("Entrenamiento", "Juega y, si hay una jugada mejor, el entrenador te la explica y puedes deshacer.", onTraining, T.green)}
